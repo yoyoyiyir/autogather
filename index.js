@@ -22,7 +22,8 @@ function sleep(ms) {
     	for (let i = 0; i < accounts.length; i++) {
 			process.env['ACCOUNT'] = accountusers[i];
 			console.log('Gathering battles of: '+chalk.green(accountusers[i]))
-			await battles.battlesList(accountusers[i]).then(x=>x).catch(() => console.log('Unable to gather data for local.'));  
+			await battles.battlesList(accountusers[i]).then(x=>x).catch(() => console.log('Unable to gather data for local.')); 
+		await sleep(10000);
 		}
 	console.log('Waiting for the next gather in', sleepingTime / 1000 / 60, ' minutes at ', new Date(Date.now() + sleepingTime).toLocaleString());
 	await sleep(sleepingTime);
