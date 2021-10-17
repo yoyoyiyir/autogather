@@ -15,8 +15,10 @@ function uniqueListByKey(arr, key) {
 }
 
 async function getBattleHistory(player = '', data = {}) {
-    //console.log('player', player);
-    const battleHistory = await fetch(`https://cache-api.splinterlands.com/battle/history?player=${player}`)
+    	const battleHistory = await fetch(`https://cache-api.splinterlands.com/battle/history?player=${player}`)
+	//const battleHistory = await fetch(`https://api.splinterlands.com/battle/history?player=${player}`)
+	//const battleHistory = await fetch(`https://game-api.splinterlands.com/battle/history?player=${player}`)
+	//const battleHistory = await fetch(`https://api2.splinterlands.com/battle/history?player=${player}`)
         .then((response) => {
             if (!response.ok) {
                 throw new Error('Network response was not ok '+player);
@@ -34,11 +36,8 @@ async function getBattleHistory(player = '', data = {}) {
 
 const extractGeneralInfo = (x) => {
     return {
-        //created_date: x.created_date ? x.created_date : '',
-        //match_type: x.match_type ? x.match_type : '',
         mana_cap: x.mana_cap ? x.mana_cap : '',
         ruleset: x.ruleset ? x.ruleset : '',
-        //inactive: x.inactive ? x.inactive : ''
     }
 }
 
@@ -54,34 +53,18 @@ const extractMonster = (team) => {
         summoner_id: team.summoner.card_detail_id,
         summoner_level: team.summoner.level,
         monster_1_id: monster1 ? monster1.card_detail_id : '',
-        //monster_1_level: monster1 ? monster1.level : '',
-        //monster_1_abilities: monster1 ? monster1.abilities : '',
         monster_2_id: monster2 ? monster2.card_detail_id : '',
-        //monster_2_level: monster2 ? monster2.level : '',
-        //monster_2_abilities: monster2 ? monster2.abilities : '',
         monster_3_id: monster3 ? monster3.card_detail_id : '',
-        //monster_3_level: monster3 ? monster3.level : '',
-        //monster_3_abilities: monster3 ? monster3.abilities : '',
         monster_4_id: monster4 ? monster4.card_detail_id : '',
-        //monster_4_level: monster4 ? monster4.level : '',
-		//monster_4_abilities: monster4 ? monster4.abilities : '',
         monster_5_id: monster5 ? monster5.card_detail_id : '',
-        //monster_5_level: monster5 ? monster5.level : '',
-        //monster_5_abilities: monster5 ? monster5.abilities : '',
         monster_6_id: monster6 ? monster6.card_detail_id : '',
-        //monster_6_level: monster6 ? monster6.level : '',
-        //monster_6_abilities: monster6 ? monster6.abilities : ''
     }
 }
 
 let battlesList = [];
 let promises = [];
-let min_rating = [];
-const battles = (player) => getBattleHistory(player)
+const battles = (player,fn='') => getBattleHistory(player)
   .then(u => u.map(x => {
-    x.player_1 == process.env.ACCOUNT
-      ? min_rating.push(x.player_1_rating_final)
-      : min_rating.push(x.player_2_rating_final);
     return [x.player_1, x.player_2]
   }).flat().filter(distinct))
   .then(ul => ul.map(user => {
@@ -98,10 +81,6 @@ const battles = (player) => getBattleHistory(player)
                 ...monstersDetails,
                 ...info,
                 battle_queue_id: battle.battle_queue_id_1,
-                //player_rating_initial: battle.player_1_rating_initial,
-                //player_rating_final: battle.player_1_rating_final,
-                //winner: battle.player_1,
-
               }
             } else if (battle.winner && battle.winner == battle.player_2) {
               const monstersDetails = extractMonster(details.team2)
@@ -110,9 +89,6 @@ const battles = (player) => getBattleHistory(player)
                 ...monstersDetails,
                 ...info,
                 battle_queue_id: battle.battle_queue_id_2,
-                //player_rating_initial: battle.player_2_rating_initial,
-                //player_rating_final: battle.player_2_rating_final,
-                //winner: battle.player_2,
               }
             }
           }
@@ -123,8 +99,8 @@ const battles = (player) => getBattleHistory(player)
   }))
   .then(() => { return Promise.all(promises) })
   .then(() => { return new Promise((res,rej) => {
-	  let bb1 = battlesList.length,bb2=bb1;
-    fs.readFile(`./newhistory.json`, 'utf8', (err, data) => {
+	let bb1 = battlesList.length,bb2=bb1;
+    fs.readFile(`./newHistory.json${fn}`, 'utf8', (err, data) => {
       if (err) {
         console.log(`Error reading file from disk: ${err}`); rej(err)
       } else {
@@ -134,7 +110,7 @@ const battles = (player) => getBattleHistory(player)
       battlesList = uniqueListByKey(battlesList.filter(x => x != undefined), "battle_queue_id")
 	  console.log('battles',bb4=battlesList.length-bb3,' added')
 	  console.log(' total battle',battlesList.length+bb4);
-      fs.writeFile(`./newhistory.json`, JSON.stringify(battlesList), function (err) {
+      fs.writeFile(`./newHistory.json${fn}`, JSON.stringify(battlesList), function (err) {
         if (err) {
           console.log(err,'a'); rej(err);
         }
