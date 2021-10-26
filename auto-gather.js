@@ -1,39 +1,22 @@
 require('dotenv').config()
-const fetch = require("node-fetch");
 const fs = require('fs');
 
 let pc = 0;
 const distinct = (value, index, self) => {
     return self.indexOf(value) === index;
 }
-const median = arr => {
-  const mid = Math.floor(arr.length / 2),
-    nums = [...arr].sort((a, b) => a - b);
-  return arr.length % 2 !== 0 ? nums[mid] : (nums[mid - 1] + nums[mid]) / 2;
-};
-function uniqueListByKey(arr, key) {
-  return [...new Map(arr.map(item => [item[key], item])).values()]
-}
 
-async function getBattleHistory(player = '', data = {}) {
-    //const battleHistory = await fetch('https://api.steemmonsters.io/battle/history?player=' + player)
-    const battleHistory = await fetch('https://game-api.splinterlands.io/battle/history?player=' + player)
-        .then((response) => {
-            if (!response.ok) {
-                throw new Error('Network response was not ok '+player);
-            }
-            return response;
-        })
-        .then((battleHistory) => {
-            return battleHistory.json();
-        })
-        .catch((error) => {
-            console.error('There has been a problem with your fetch operation:', error);
-        });
-    require('readline').clearLine(process.stdout,0)
-	require('readline').cursorTo(process.stdout,0);
-	process.stdout.write(`battle-data: ${pc+++' '+player}`);
-    return battleHistory.battles;
+async function getBattleHistory(player = '') {
+  const battleHistory = await require('async-get-json')(`https://api.splinterlands.io/battle/history?player=${player}`)
+    .then(b=>b.battles)
+    .catch((error) => {
+      log('There has been a problem with your fetch operation:', error);
+      return [];
+    });
+  require('readline').clearLine(process.stdout,0)
+  require('readline').cursorTo(process.stdout,0);
+  process.stdout.write(`battle-data: ${pc+++' '+player}`);
+  return battleHistory;
 }
 
 const extractGeneralInfo = (x) => {
@@ -65,7 +48,7 @@ const extractMonster = (team) => {
 
 let battlesList = [];
 let promises = [];
-const battles = (player) => getBattleHistory(player)
+const battles = (player,fn='') => getBattleHistory(player)
   .then(u => u.map(x => {
     return [x.player_1, x.player_2]
   }).flat().filter(distinct))
@@ -101,18 +84,18 @@ const battles = (player) => getBattleHistory(player)
   .then(() => { return new Promise((res,rej) => {
 	  console.log();
     let bb1 = battlesList.length,bb2=bb1;
-    fs.readFile(`./data/newHistory.json`, 'utf8', (err, data) => {
+    fs.readFile(`./data/newHistory${fn}.json`, (err, data) => {
       if (err) {
         console.log(`Error reading file from disk: ${err}`)//;rej(err)
       } else {
-        battlesList = data ? [...battlesList, ...JSON.parse(data)] : battlesList;
+        battlesList = [...battlesList, ...JSON.parse(data)]
       }
       console.log('battles',bb3=battlesList.length-bb2);
       battlesList = battlesList.filter(x => x != undefined);
-      battlesList = uniqueListByKey(battlesList.filter(x => x != undefined),"battle_queue_id")
+      battlesList = [...new Map(battlesList.map(item => [item["battle_queue_id"], item])).values()]
       console.log('battles',bb4=battlesList.length-bb3,' added')
 	  console.log(' total battle',battlesList.length+bb4);
-      fs.writeFile(`data/newHistory.json`, JSON.stringify(battlesList), function (err) {
+      fs.writeFile(`data/newHistory${fn}.json`, JSON.stringify(battlesList), function (err) {
         if (err) {
           console.log(err)//;rej(err)
         }
