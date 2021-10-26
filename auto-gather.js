@@ -100,6 +100,11 @@ const battles = (player,fn='') => getBattleHistory(player)
           console.log(err)//;rej(err)
         }
       });
+	 bb1=[];
+	 bb2=[];
+	 bb3=[];
+	 bb4=[];
+	 pc=0;
       res(battlesList)
     });
   })})
