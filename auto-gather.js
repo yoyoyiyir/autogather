@@ -1,5 +1,5 @@
 require('dotenv').config()
-const fs = require('fs');
+const {readFile,writeFile} = require('jsonfile');
 
 let pc = 0;
 const distinct = (value, index, self) => {
@@ -84,22 +84,18 @@ const battles = (player,fn='') => getBattleHistory(player)
   .then(() => { return new Promise((res,rej) => {
 	  console.log();
     let bb1 = battlesList.length,bb2=bb1;
-    fs.readFile(`./data/newHistory${fn}.json`, (err, data) => {
+    readFile(`./data/newHistory${fn}.json`, (err, data) => {
       if (err) {
         console.log(`Error reading file from disk: ${err}`)//;rej(err)
       } else {
-        battlesList = [...battlesList, ...JSON.parse(data)]
+        data && (battlesList = [...data,...battlesList])
       }
       console.log('battles',bb3=battlesList.length-bb2);
       battlesList = battlesList.filter(x => x != undefined);
       battlesList = [...new Map(battlesList.map(item => [item["battle_queue_id"], item])).values()]
       console.log('battles',bb4=battlesList.length-bb3,' added')
 	  console.log(' total battle',battlesList.length+bb4);
-      fs.writeFile(`data/newHistory${fn}.json`, JSON.stringify(battlesList), function (err) {
-        if (err) {
-          console.log(err)//;rej(err)
-        }
-      });
+      writeFile(`./data/newHistory${fn}.json`, battlesList).catch(e=>log(e))
 	 bb1=[];
 	 bb2=[];
 	 bb3=[];
