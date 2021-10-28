@@ -7,10 +7,10 @@ const distinct = (value, index, self) => {
 }
 
 async function getBattleHistory(player = '') {
-  const battleHistory = await require('async-get-json')(`https://api.splinterlands.io/battle/history?player=${player}`)
+  const battleHistory = await require('async-get-json')(`https://game-api.splinterlands.io/battle/history?player=${player}`)
     .then(b=>b.battles)
     .catch((error) => {
-      log('There has been a problem with your fetch operation:', error);
+      console.log('There has been a problem with your fetch operation:', error);
       return [];
     });
   require('readline').clearLine(process.stdout,0)
@@ -61,19 +61,14 @@ const battles = (player,fn='') => getBattleHistory(player)
           if (details.type != 'Surrender') {
             const info = extractGeneralInfo(battle)
             const t1mon = extractMonster(details.team1)
-            const t2mon = extractMonster(details.team2)
+
             return {
               ...t1mon,
 			  ...info,
 			  battle_queue_id: battle.battle_queue_id_1,
               verdict: (battle.winner && battle.winner == battle.player_1)?'w':(battle.winner == 'DRAW')? 'd' :'l',
             }
-            return {
-              ...t2mon,
-			  ...info,
-			  battle_queue_id: battle.battle_queue_id_2,
-              verdict: (battle.winner && battle.winner == battle.player_2)?'w':(battle.winner == 'DRAW')? 'd' :'l',
-            }
+            
           }
         })
       )
@@ -88,14 +83,14 @@ const battles = (player,fn='') => getBattleHistory(player)
       if (err) {
         console.log(`Error reading file from disk: ${err}`)//;rej(err)
       } else {
-        data && (battlesList = [...data,...battlesList])
+        battlesList = [...data,...battlesList]
       }
       console.log('battles',bb3=battlesList.length-bb2);
       battlesList = battlesList.filter(x => x != undefined);
       battlesList = [...new Map(battlesList.map(item => [item["battle_queue_id"], item])).values()]
       console.log('battles',bb4=battlesList.length-bb3,' added')
 	  console.log(' total battle',battlesList.length+bb4);
-      writeFile(`./data/newHistory${fn}.json`, battlesList).catch(e=>log(e))
+      writeFile(`./data/newHistory${fn}.json`, battlesList).catch(e=>console.log(e))
 	 bb1=[];
 	 bb2=[];
 	 bb3=[];
