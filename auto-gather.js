@@ -6,6 +6,10 @@ const distinct = (value, index, self) => {
     return self.indexOf(value) === index;
 }
 
+function uniqueListByKey(arr, key) {
+  return [...new Map(arr.map(item => [item[key], item])).values()]
+}
+
 async function getBattleHistory(player = '') {
   const battleHistory = await require('async-get-json')(`https://game-api.splinterlands.io/battle/history?player=${player}`)
     .then(b=>b.battles)
@@ -36,7 +40,6 @@ const extractMonster = (team) => {
 
     return {
         summoner_id: team.summoner.card_detail_id,
-        summoner_level: team.summoner.level,
         monster_1_id: monster1 ? monster1.card_detail_id : '',
         monster_2_id: monster2 ? monster2.card_detail_id : '',
         monster_3_id: monster3 ? monster3.card_detail_id : '',
@@ -48,56 +51,68 @@ const extractMonster = (team) => {
 
 let battlesList = [];
 let promises = [];
-const battles = (player,fn='') => getBattleHistory(player)
-  .then(u => u.map(x => {
-    return [x.player_1, x.player_2]
-  }).flat().filter(distinct))
-  .then(ul => ul.map(user => {
+const battles = async (player) =>  await getBattleHistory(player)
+.then(u => u.map(x => { 
+return [x.player_1, x.player_2] 
+}).reduce((acc, val) => acc.concat(val), []).filter(distinct))
+.then(ul => ul.map(user => {
     promises.push(
       getBattleHistory(user)
       .then(battles => battles.map(
         battle => {
           const details = JSON.parse(battle.details);
           if (details.type != 'Surrender') {
-            const info = extractGeneralInfo(battle)
-            const t1mon = extractMonster(details.team1)
-
-            return {
-              ...t1mon,
-			  ...info,
-			  battle_queue_id: battle.battle_queue_id_1,
-              verdict: (battle.winner && battle.winner == battle.player_1)?'w':(battle.winner == 'DRAW')? 'd' :'l',
+            if (battle.winner && battle.winner == battle.player_1) {
+              const monstersDetails = extractMonster(details.team1)
+              const info = extractGeneralInfo(battle)
+              return {
+                ...monstersDetails,
+                ...info,
+                battle_queue_id: battle.battle_queue_id_1,
+               verdict: (battle.winner && battle.winner == battle.player_1)?'w':(winner == 'DRAW')? 'd' :'l',
+              }
+            } else if (battle.winner && battle.winner == battle.player_2) {
+              const monstersDetails = extractMonster(details.team2)
+              const info = extractGeneralInfo(battle)
+              return {
+                ...monstersDetails,
+                ...info,
+                battle_queue_id: battle.battle_queue_id_2,
+                verdict: (battle.winner && battle.winner == battle.player_2)?'w':(winner == 'DRAW')? 'd' :'l',
+              }
             }
-            
+			
           }
         })
       )
       .then(x => battlesList = [...battlesList, ...x])
     )
   }))
-  .then(() => { console.log(promises.length);return Promise.all(promises) })
+  .then(() => { return Promise.all(promises) })
   .then(() => { return new Promise((res,rej) => {
-	  console.log();
-    let bb1 = battlesList.length,bb2=bb1;
-    readFile(`./data/newHistory${fn}.json`, (err, data) => {
+				 
+	  let bb1 = battlesList.length,bb2=bb1;
+    readFile(`./data/newHistory.json`,(err, data) => {
       if (err) {
-        console.log(`Error reading file from disk: ${err}`)//;rej(err)
+        console.log(`Error reading file from disk: ${err}`); rej(err)
       } else {
-        battlesList = [...data,...battlesList]
+		data1 = data;
+        battlesList = data1 ? [...battlesList, ...data1] : battlesList;
       }
       console.log('battles',bb3=battlesList.length-bb2);
-      battlesList = battlesList.filter(x => x != undefined);
-      battlesList = [...new Map(battlesList.map(item => [item["battle_queue_id"], item])).values()]
-      console.log('battles',bb4=battlesList.length-bb3,' added')
-	  console.log(' total battle',battlesList.length+bb4);
-      writeFile(`./data/newHistory${fn}.json`, battlesList).catch(e=>console.log(e))
-	 bb1=[];
-	 bb2=[];
-	 bb3=[];
-	 bb4=[];
-	 pc=0;
-      res(battlesList)
+      battlesList = uniqueListByKey(battlesList.filter(x => x != undefined), "battle_queue_id")
+	    console.log('battles',bb4=battlesList.length-bb3,' added')
+	    console.log('total battle',battlesList.length+bb4);
+      writeFile(`./data/newHistory.json`, battlesList, function (err) {
+        if (err) {
+          console.log(err,'a'); rej(err);
+        }
+         battlesList = [],
+         promises = [];
+		 data1 = [];
+      });
+      res(battlesList,data,promises)
     });
-  })})
+  }) }) 
 
 module.exports.battlesList = battles;
