@@ -2,6 +2,7 @@
 require('dotenv').config()
 const battles = require('./auto-gather');
 const chalk = require('chalk');
+const fs = require('fs');
 var dir = './data';
 if (!fs.existsSync(dir)){
     fs.mkdirSync(dir);
