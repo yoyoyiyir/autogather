@@ -2,6 +2,10 @@
 require('dotenv').config()
 const battles = require('./auto-gather');
 const chalk = require('chalk');
+var dir = './data';
+if (!fs.existsSync(dir)){
+    fs.mkdirSync(dir);
+}
 
 const sleepingTimeInMinutes = process.env.MINUTES_GATHER_INTERVAL || 30;
 const sleepingTime = sleepingTimeInMinutes * 60000;
