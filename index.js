@@ -14,7 +14,7 @@ function sleep(ms) {
 
 (async () => {
 	try {
-		const accountusers = process.env.ACCOUNT.split(',');
+		const accountusers = process.env.ACCOUNT?.split(',');
 		const accounts = accountusers;
 		console.log(' Loaded ' + chalk.yellow(accounts.length) + ' Accounts')
 		console.log(' Accounts: ' + chalk.greenBright(accounts))
